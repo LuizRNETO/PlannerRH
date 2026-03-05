@@ -3,14 +3,135 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Edit2, MoreHorizontal, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import React, { useState } from 'react';
 
 interface KanbanViewProps {
   activities: Activity[];
   onEditActivity: (activity: Activity) => void;
   onMarkRealized: (activity: Activity) => void;
+  onStatusChange: (activityId: string, newStatus: Activity['status']) => void;
 }
 
-export function KanbanView({ activities, onEditActivity, onMarkRealized }: KanbanViewProps) {
+interface DraggableCardProps {
+  activity: Activity;
+  onClick: (activity: Activity) => void;
+  onMarkRealized: (activity: Activity) => void;
+  getTypeColor: (type: Activity['type']) => string;
+  getTypeLabel: (type: Activity['type']) => string;
+  getPriorityBadge: (priority: Activity['priority']) => React.ReactNode;
+  columnId: string;
+}
+
+const DraggableCard: React.FC<DraggableCardProps> = ({ activity, onClick, onMarkRealized, getTypeColor, getTypeLabel, getPriorityBadge, columnId }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: activity.id,
+    data: { activity }
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 50,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing touch-none",
+        isDragging && "opacity-50 rotate-2 shadow-xl"
+      )}
+      onClick={() => onClick(activity)}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex gap-2">
+          <span className={cn("text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full", getTypeColor(activity.type))}>
+            {getTypeLabel(activity.type)}
+          </span>
+          {getPriorityBadge(activity.priority || 'medium')}
+        </div>
+        {columnId === 'pending' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkRealized(activity);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="text-gray-400 hover:text-emerald-600 transition-colors"
+            title="Concluir"
+          >
+            <CheckCircle className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      <h4 className="font-medium text-gray-900 mb-1">{activity.title}</h4>
+      <div className="flex items-center gap-2 text-xs text-gray-500 mt-3">
+        <Clock className="w-3 h-3" />
+        <span>
+          {format(parseISO(activity.plannedDate), "d 'de' MMMM", { locale: ptBR })}
+        </span>
+        {activity.realizedDate && parseISO(activity.realizedDate) > parseISO(activity.plannedDate) && (
+          <AlertCircle className="w-3 h-3 text-red-500 ml-auto" title="Atrasado" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface DroppableColumnProps {
+  id: string;
+  title: string;
+  count: number;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ id, title, count, children, className }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: id,
+  });
+
+  return (
+    <div className="flex-1 min-w-[300px] flex flex-col h-full">
+      <div className={cn("p-3 rounded-t-xl border-b-2 font-semibold text-gray-700 flex justify-between items-center", className)}>
+        <span>{title}</span>
+        <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs">
+          {count}
+        </span>
+      </div>
+      <div 
+        ref={setNodeRef}
+        className={cn(
+          "bg-gray-50/50 flex-1 p-3 rounded-b-xl border border-t-0 border-gray-200 space-y-3 overflow-y-auto transition-colors",
+          isOver && "bg-indigo-50/50 ring-2 ring-inset ring-indigo-200"
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export function KanbanView({ activities, onEditActivity, onMarkRealized, onStatusChange }: KanbanViewProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
   const columns = [
     { id: 'pending', title: 'A Fazer', color: 'bg-gray-100 border-gray-200' },
     { id: 'completed', title: 'Concluído', color: 'bg-emerald-50 border-emerald-100' },
@@ -26,6 +147,25 @@ export function KanbanView({ activities, onEditActivity, onMarkRealized }: Kanba
         const weightB = priorityWeight[b.priority || 'medium'];
         return weightB - weightA; // High priority first
       });
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      // over.id is the column status
+      const newStatus = over.id as Activity['status'];
+      const activity = activities.find(a => a.id === active.id);
+      
+      if (activity && activity.status !== newStatus) {
+        onStatusChange(active.id as string, newStatus);
+      }
+    }
+    setActiveId(null);
   };
 
   const getTypeColor = (type: Activity['type']) => {
@@ -61,63 +201,50 @@ export function KanbanView({ activities, onEditActivity, onMarkRealized }: Kanba
     }
   };
 
+  const activeActivity = activeId ? activities.find(a => a.id === activeId) : null;
+
   return (
-    <div className="flex gap-6 h-full overflow-x-auto pb-4">
-      {columns.map((column) => (
-        <div key={column.id} className="flex-1 min-w-[300px] flex flex-col h-full">
-          <div className={cn("p-3 rounded-t-xl border-b-2 font-semibold text-gray-700 flex justify-between items-center", column.color)}>
-            <span>{column.title}</span>
-            <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs">
-              {getActivitiesByStatus(column.id).length}
-            </span>
-          </div>
-          <div className="bg-gray-50/50 flex-1 p-3 rounded-b-xl border border-t-0 border-gray-200 space-y-3 overflow-y-auto">
+    <DndContext 
+      sensors={sensors} 
+      onDragStart={handleDragStart} 
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex gap-6 h-full overflow-x-auto pb-4">
+        {columns.map((column) => (
+          <DroppableColumn 
+            key={column.id} 
+            id={column.id} 
+            title={column.title} 
+            count={getActivitiesByStatus(column.id).length}
+            className={column.color}
+          >
             {getActivitiesByStatus(column.id).map((activity) => (
-              <div
+              <DraggableCard
                 key={activity.id}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group cursor-pointer"
-                onClick={() => onEditActivity(activity)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex gap-2">
-                    <span className={cn("text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full", getTypeColor(activity.type))}>
-                      {getTypeLabel(activity.type)}
-                    </span>
-                    {getPriorityBadge(activity.priority || 'medium')}
-                  </div>
-                  {column.id === 'pending' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMarkRealized(activity);
-                      }}
-                      className="text-gray-400 hover:text-emerald-600 transition-colors"
-                      title="Concluir"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <h4 className="font-medium text-gray-900 mb-1">{activity.title}</h4>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mt-3">
-                  <Clock className="w-3 h-3" />
-                  <span>
-                    {format(parseISO(activity.plannedDate), "d 'de' MMMM", { locale: ptBR })}
-                  </span>
-                  {activity.realizedDate && parseISO(activity.realizedDate) > parseISO(activity.plannedDate) && (
-                    <AlertCircle className="w-3 h-3 text-red-500 ml-auto" title="Atrasado" />
-                  )}
-                </div>
-              </div>
+                activity={activity}
+                onClick={onEditActivity}
+                onMarkRealized={onMarkRealized}
+                getTypeColor={getTypeColor}
+                getTypeLabel={getTypeLabel}
+                getPriorityBadge={getPriorityBadge}
+                columnId={column.id}
+              />
             ))}
             {getActivitiesByStatus(column.id).length === 0 && (
               <div className="text-center py-8 text-gray-400 text-sm italic">
                 Vazio
               </div>
             )}
+          </DroppableColumn>
+        ))}
+      </div>
+      <DragOverlay>
+        {activeActivity ? (
+          <div className="bg-white p-4 rounded-lg shadow-xl border border-gray-200 opacity-90 rotate-2 w-[300px]">
+             <h4 className="font-medium text-gray-900 mb-1">{activeActivity.title}</h4>
           </div>
-        </div>
-      ))}
-    </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

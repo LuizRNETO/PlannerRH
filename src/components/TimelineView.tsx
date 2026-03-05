@@ -128,13 +128,22 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
                   </div>
                   
                   {/* Card */}
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white rounded-xl border border-red-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-2">
+                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white rounded-xl border border-red-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-[10px] font-bold uppercase tracking-wider text-red-600 border border-red-100">
+                        <AlertCircle className="w-3 h-3" />
+                        Atrasado
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-start mb-2 pr-20">
                       <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 w-fit", getTypeColor(activity.type))}>
                         {getTypeIcon(activity.type)}
                         {activity.type}
                       </span>
-                      <span className="text-xs text-red-500 font-medium">
+                    </div>
+                    <div className="mb-1">
+                      <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                        <CalendarIcon className="w-3 h-3" />
                         {format(parseISO(activity.plannedDate), "d 'de' MMM", { locale: ptBR })}
                       </span>
                     </div>
@@ -164,17 +173,20 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
           
           if (!hasActivities) {
             return (
-              <div key={group.date.toISOString()} className="relative py-3 flex items-center justify-center group/day">
-                {/* Small Date Marker for Empty Days */}
+              <div key={group.date.toISOString()} className="relative py-2 flex items-center justify-center group/day">
+                {/* Subtle Dot for Empty Days */}
                 <div 
                   className={cn(
-                    "relative z-10 px-2 py-1 rounded-full border text-[10px] font-medium transition-all duration-200",
+                    "relative z-10 w-2 h-2 rounded-full border transition-all duration-200",
                     isTodayDate 
-                      ? "bg-indigo-600 text-white border-indigo-600 scale-110" 
-                      : "bg-white text-gray-300 border-gray-200 group-hover/day:text-gray-500 group-hover/day:border-gray-300"
+                      ? "bg-indigo-600 border-indigo-600 w-3 h-3" 
+                      : "bg-white border-gray-300 group-hover/day:border-gray-400 group-hover/day:scale-125"
                   )}
+                  title={format(group.date, "dd 'de' MMMM", { locale: ptBR })}
                 >
-                  {format(group.date, "dd MMM", { locale: ptBR })}
+                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 opacity-0 group-hover/day:opacity-100 transition-opacity whitespace-nowrap bg-white px-1 rounded shadow-sm border border-gray-100">
+                     {format(group.date, "dd MMM", { locale: ptBR })}
+                   </span>
                 </div>
               </div>
             );
@@ -184,18 +196,23 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
           <div key={group.date.toISOString()} className="relative py-6">
              <div className="sticky top-20 z-10 mb-8 pointer-events-none">
                <div className="flex items-center justify-center">
-                 <span className={cn(
-                   "px-4 py-1.5 text-sm font-bold uppercase tracking-wider rounded-full shadow-sm border flex items-center gap-2 transition-colors bg-white pointer-events-auto",
-                   isTodayDate 
-                    ? "text-indigo-600 border-indigo-200 ring-4 ring-indigo-50" 
-                    : "text-gray-700 border-gray-200"
-                 )}>
-                   {isTodayDate ? 'Hoje' : isTomorrow(group.date) ? 'Amanhã' : format(group.date, "EEEE, d 'de' MMMM", { locale: ptBR })}
-                   <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                    </span>
-                 </span>
+                 <div className="relative">
+                   {/* Axis Indicator for Days with Activities */}
+                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-indigo-100 rounded-full -z-10 animate-pulse"></div>
+                   
+                   <span className={cn(
+                     "px-4 py-1.5 text-sm font-bold uppercase tracking-wider rounded-full shadow-sm border flex items-center gap-2 transition-colors bg-white pointer-events-auto",
+                     isTodayDate 
+                      ? "text-indigo-600 border-indigo-200 ring-4 ring-indigo-50" 
+                      : "text-gray-700 border-gray-200"
+                   )}>
+                     {isTodayDate ? 'Hoje' : isTomorrow(group.date) ? 'Amanhã' : format(group.date, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                     <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                      </span>
+                   </span>
+                 </div>
                </div>
             </div>
 

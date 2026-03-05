@@ -276,19 +276,26 @@ export function ActivityModal({
 
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {subActivities.map((sub) => (
-                  <div key={sub.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg group">
+                  <div 
+                    key={sub.id} 
+                    className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg group cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => toggleSubActivity(sub.id)}
+                  >
                     <input
                       type="checkbox"
                       checked={sub.completed}
-                      onChange={() => toggleSubActivity(sub.id)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      onChange={() => {}} // Handled by parent div
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 pointer-events-none"
                     />
                     <span className={`flex-1 text-sm ${sub.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                       {sub.title}
                     </span>
                     <button
                       type="button"
-                      onClick={() => removeSubActivity(sub.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSubActivity(sub.id);
+                      }}
                       className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
