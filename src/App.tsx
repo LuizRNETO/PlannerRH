@@ -57,6 +57,14 @@ export default function App() {
     markAsRealized(activity.id, today);
   };
 
+  const handleMoveActivity = (activityId: string, newDate: Date) => {
+    const activity = activities.find(a => a.id === activityId);
+    if (activity) {
+      const dateStr = newDate.toISOString().split('T')[0];
+      updateActivity(activityId, { plannedDate: dateStr });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -149,6 +157,7 @@ export default function App() {
               onAddActivity={handleAddActivity}
               onEditActivity={handleEditActivity}
               onMarkRealized={handleMarkRealized}
+              onMoveActivity={handleMoveActivity}
             />
           )}
           {viewMode === 'list' && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   format,
   startOfMonth,
@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, CheckCircle, Clock, AlertCircle, Check, Sidebar, X, Repeat } from 'lucide-react';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Activity } from '../types';
 import { cn } from '../lib/utils';
 import { isActivityScheduledForDate } from '../utils/recurrence';
@@ -25,11 +26,176 @@ interface CalendarProps {
   onAddActivity: (date: Date) => void;
   onEditActivity: (activity: Activity) => void;
   onMarkRealized: (activity: Activity) => void;
+  onMoveActivity: (activityId: string, newDate: Date) => void;
 }
 
-export function Calendar({ activities, onAddActivity, onEditActivity, onMarkRealized }: CalendarProps) {
+interface DraggableActivityProps {
+  activity: Activity;
+  onClick: (e: React.MouseEvent) => void;
+  onMarkRealized: (activity: Activity) => void;
+  getActivityColor: (type: Activity['type']) => string;
+}
+
+const DraggableActivity: React.FC<DraggableActivityProps> = ({ activity, onClick, onMarkRealized, getActivityColor }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: activity.id,
+    data: { activity }
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 50,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onClick={onClick}
+      className={cn(
+        'text-xs p-1.5 rounded border cursor-grab active:cursor-grabbing hover:shadow-sm transition-all flex flex-col gap-0.5 touch-none',
+        getActivityColor(activity.type),
+        activity.status === 'completed' && 'opacity-75',
+        isDragging && 'opacity-50 shadow-lg rotate-2'
+      )}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1 min-w-0">
+          {activity.frequency !== 'once' && (
+            <Repeat className="w-3 h-3 text-gray-500 shrink-0" />
+          )}
+          <span className="font-medium truncate">{activity.title}</span>
+        </div>
+        {activity.status === 'completed' ? (
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkRealized(activity);
+            }}
+            onPointerDown={(e) => e.stopPropagation()} // Prevent drag start on button click
+            className="text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full p-0.5 transition-all shrink-0"
+            title="Marcar como Realizado"
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      
+      {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+        <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden mt-0.5">
+          <div 
+            className="h-full bg-blue-500 rounded-full transition-all duration-300"
+            style={{ 
+              width: `${(activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100}%` 
+            }}
+          />
+        </div>
+      )}
+
+      {activity.realizedDate && (
+        <div className="text-[10px] opacity-75 flex items-center gap-1">
+          Feito: {format(parseISO(activity.realizedDate), 'd MMM', { locale: ptBR })}
+          {parseISO(activity.realizedDate) > parseISO(activity.plannedDate) && (
+             <AlertCircle className="w-3 h-3 text-red-500" />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface DroppableDayProps {
+  day: Date;
+  isCurrent: boolean;
+  isTodayDate: boolean;
+  onAddActivity: (date: Date) => void;
+  children: React.ReactNode;
+}
+
+const DroppableDay: React.FC<DroppableDayProps> = ({ day, isCurrent, isTodayDate, onAddActivity, children }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: day.toISOString(),
+    data: { date: day }
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'bg-white min-h-[120px] p-2 flex flex-col gap-1 group relative transition-colors',
+        !isCurrent && 'bg-gray-50/30 text-gray-400',
+        isOver && 'bg-indigo-50 ring-2 ring-inset ring-indigo-300'
+      )}
+      onClick={() => onAddActivity(day)}
+    >
+      <div className="flex justify-between items-start">
+        <span
+          className={cn(
+            'text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full',
+            isTodayDate
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-gray-700'
+          )}
+        >
+          {format(day, 'd')}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddActivity(day);
+          }}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded-full transition-opacity"
+        >
+          <Plus className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1 mt-1 overflow-y-auto max-h-[150px] scrollbar-thin">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Calendar({ activities, onAddActivity, onEditActivity, onMarkRealized, onMoveActivity }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showDaySidebar, setShowDaySidebar] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      // over.id is the date ISO string
+      const newDate = parseISO(over.id as string);
+      if (isValid(newDate)) {
+        onMoveActivity(active.id as string, newDate);
+      }
+    }
+    setActiveId(null);
+  };
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -197,106 +363,52 @@ export function Calendar({ activities, onAddActivity, onEditActivity, onMarkReal
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-gray-200 gap-px overflow-y-auto">
-        {days.map((day) => {
-          const dayActivities = getActivitiesForDay(day);
-          const isCurrent = isSameMonth(day, monthStart);
-          const isTodayDate = isToday(day);
+          <DndContext 
+            sensors={sensors} 
+            onDragStart={handleDragStart} 
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-gray-200 gap-px overflow-y-auto">
+              {days.map((day) => {
+                const dayActivities = getActivitiesForDay(day);
+                const isCurrent = isSameMonth(day, monthStart);
+                const isTodayDate = isToday(day);
 
-          return (
-            <div
-              key={day.toString()}
-              className={cn(
-                'bg-white min-h-[120px] p-2 flex flex-col gap-1 group relative transition-colors hover:bg-gray-50/50',
-                !isCurrent && 'bg-gray-50/30 text-gray-400'
-              )}
-              onClick={() => onAddActivity(day)}
-            >
-              <div className="flex justify-between items-start">
-                <span
-                  className={cn(
-                    'text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full',
-                    isTodayDate
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-gray-700'
-                  )}
-                >
-                  {format(day, 'd')}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddActivity(day);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded-full transition-opacity"
-                >
-                  <Plus className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-1 mt-1 overflow-y-auto max-h-[150px] scrollbar-thin">
-                {dayActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditActivity(activity);
-                    }}
-                    className={cn(
-                      'text-xs p-1.5 rounded border cursor-pointer hover:shadow-sm transition-all flex flex-col gap-0.5',
-                      getActivityColor(activity.type),
-                      activity.status === 'completed' && 'opacity-75'
-                    )}
+                return (
+                  <DroppableDay
+                    key={day.toString()}
+                    day={day}
+                    isCurrent={isCurrent}
+                    isTodayDate={isTodayDate}
+                    onAddActivity={onAddActivity}
                   >
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1 min-w-0">
-                        {activity.frequency !== 'once' && (
-                          <Repeat className="w-3 h-3 text-gray-500 shrink-0" />
-                        )}
-                        <span className="font-medium truncate">{activity.title}</span>
-                      </div>
-                      {activity.status === 'completed' ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onMarkRealized(activity);
-                          }}
-                          className="text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full p-0.5 transition-all shrink-0"
-                          title="Marcar como Realizado"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
-                      <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden mt-0.5">
-                        <div 
-                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${(activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100}%` 
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {activity.realizedDate && (
-                      <div className="text-[10px] opacity-75 flex items-center gap-1">
-                        Feito: {format(parseISO(activity.realizedDate), 'd MMM', { locale: ptBR })}
-                        {parseISO(activity.realizedDate) > parseISO(activity.plannedDate) && (
-                           <AlertCircle className="w-3 h-3 text-red-500" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    {dayActivities.map((activity) => (
+                      <DraggableActivity
+                        key={activity.id}
+                        activity={activity}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditActivity(activity);
+                        }}
+                        onMarkRealized={onMarkRealized}
+                        getActivityColor={getActivityColor}
+                      />
+                    ))}
+                  </DroppableDay>
+                );
+              })}
             </div>
-          );
-        })}
-          </div>
+            <DragOverlay>
+              {activeId ? (
+                <div className={cn(
+                  'text-xs p-1.5 rounded border shadow-lg bg-white opacity-80 rotate-2 w-[150px]',
+                  getActivityColor(activities.find(a => a.id === activeId)?.type || 'simple')
+                )}>
+                   <span className="font-medium truncate">{activities.find(a => a.id === activeId)?.title}</span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
 
         {/* Today Sidebar */}
