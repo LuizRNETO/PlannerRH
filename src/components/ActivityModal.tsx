@@ -4,6 +4,7 @@ import { X, Plus, Trash2 } from 'lucide-react';
 import { Activity, ActivityType, Frequency, Priority, SubActivity, IntervalUnit } from '../types';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+import { ASSIGNEES } from '../constants';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -30,10 +31,12 @@ export function ActivityModal({
     intervalUnit: 'days' as IntervalUnit,
     priority: 'medium' as Priority,
     plannedDate: '',
+    startDate: '',
     description: '',
     estimatedHours: 0,
     actualHours: 0,
     assignee: '',
+    status: 'pending' as Activity['status'],
   });
   const [subActivities, setSubActivities] = useState<SubActivity[]>([]);
   const [newSubActivity, setNewSubActivity] = useState('');
@@ -48,10 +51,12 @@ export function ActivityModal({
         intervalUnit: activity.intervalUnit || 'days',
         priority: activity.priority || 'medium',
         plannedDate: activity.plannedDate,
+        startDate: activity.startDate || '',
         description: activity.description || '',
         estimatedHours: activity.estimatedHours || 0,
         actualHours: activity.actualHours || 0,
         assignee: activity.assignee || '',
+        status: activity.status,
       });
       setSubActivities(activity.subActivities || []);
     } else if (initialDate) {
@@ -67,6 +72,7 @@ export function ActivityModal({
         estimatedHours: 0,
         actualHours: 0,
         assignee: '',
+        status: 'pending',
       });
       setSubActivities([]);
     }
@@ -219,6 +225,22 @@ export function ActivityModal({
 
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as Activity['status'] })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="pending">Pendente</option>
+                <option value="in_progress">Em Andamento</option>
+                <option value="completed">Concluído</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                 Data Planejada
               </label>
               <input
@@ -226,6 +248,18 @@ export function ActivityModal({
                 required
                 value={formData.plannedDate}
                 onChange={(e) => setFormData({ ...formData, plannedDate: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Data de Início
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -264,13 +298,16 @@ export function ActivityModal({
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                 Responsável
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.assignee || ''}
                 onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="Nome"
-              />
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Selecione...</option>
+                {ASSIGNEES.map(assignee => (
+                  <option key={assignee} value={assignee}>{assignee}</option>
+                ))}
+              </select>
             </div>
           </div>
 

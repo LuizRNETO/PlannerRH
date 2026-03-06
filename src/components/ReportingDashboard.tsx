@@ -36,7 +36,7 @@ export function ReportingDashboard({ activities }: ReportingDashboardProps) {
       
       if (activity.status === 'completed') {
         completedCount++;
-      } else if (activity.status === 'pending' && activity.plannedDate < today) {
+      } else if ((activity.status === 'pending' || activity.status === 'in_progress') && activity.plannedDate < today) {
         overdueCount++;
       }
     });

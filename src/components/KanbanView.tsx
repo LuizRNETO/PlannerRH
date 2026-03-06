@@ -1,7 +1,7 @@
 import { Activity } from '../types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit2, MoreHorizontal, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Edit2, MoreHorizontal, Clock, CheckCircle, AlertCircle, Play } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import React, { useState } from 'react';
@@ -17,13 +17,14 @@ interface DraggableCardProps {
   activity: Activity;
   onClick: (activity: Activity) => void;
   onMarkRealized: (activity: Activity) => void;
+  onStatusChange: (activityId: string, newStatus: Activity['status']) => void;
   getTypeColor: (type: Activity['type']) => string;
   getTypeLabel: (type: Activity['type']) => string;
   getPriorityBadge: (priority: Activity['priority']) => React.ReactNode;
   columnId: string;
 }
 
-const DraggableCard: React.FC<DraggableCardProps> = ({ activity, onClick, onMarkRealized, getTypeColor, getTypeLabel, getPriorityBadge, columnId }) => {
+const DraggableCard: React.FC<DraggableCardProps> = ({ activity, onClick, onMarkRealized, onStatusChange, getTypeColor, getTypeLabel, getPriorityBadge, columnId }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: activity.id,
     data: { activity }
@@ -53,19 +54,34 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ activity, onClick, onMark
           </span>
           {getPriorityBadge(activity.priority || 'medium')}
         </div>
-        {columnId === 'pending' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkRealized(activity);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="text-gray-400 hover:text-emerald-600 transition-colors"
-            title="Concluir"
-          >
-            <CheckCircle className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex gap-1">
+          {columnId === 'pending' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange(activity.id, 'in_progress');
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-gray-400 hover:text-indigo-600 transition-colors"
+              title="Iniciar"
+            >
+              <Play className="w-4 h-4" />
+            </button>
+          )}
+          {(columnId === 'pending' || columnId === 'in_progress') && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkRealized(activity);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-gray-400 hover:text-emerald-600 transition-colors"
+              title="Concluir"
+            >
+              <CheckCircle className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
       <h4 className="font-medium text-gray-900 mb-1">{activity.title}</h4>
       <div className="flex items-center gap-2 text-xs text-gray-500 mt-3">
@@ -134,6 +150,7 @@ export function KanbanView({ activities, onEditActivity, onMarkRealized, onStatu
 
   const columns = [
     { id: 'pending', title: 'A Fazer', color: 'bg-gray-100 border-gray-200' },
+    { id: 'in_progress', title: 'Em Andamento', color: 'bg-indigo-50 border-indigo-100' },
     { id: 'completed', title: 'Concluído', color: 'bg-emerald-50 border-emerald-100' },
     { id: 'cancelled', title: 'Cancelado', color: 'bg-red-50 border-red-100' },
   ] as const;
@@ -224,6 +241,7 @@ export function KanbanView({ activities, onEditActivity, onMarkRealized, onStatu
                 activity={activity}
                 onClick={onEditActivity}
                 onMarkRealized={onMarkRealized}
+                onStatusChange={onStatusChange}
                 getTypeColor={getTypeColor}
                 getTypeLabel={getTypeLabel}
                 getPriorityBadge={getPriorityBadge}

@@ -85,14 +85,14 @@ export function useActivities() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
   }, [activities]);
 
-  const addActivity = (activity: Omit<Activity, 'id' | 'createdAt' | 'status'>) => {
+  const addActivity = (activity: Omit<Activity, 'id' | 'createdAt'>) => {
     const newActivity: Activity = {
+      status: 'pending',
+      realizedDate: null,
+      priority: 'medium',
       ...activity,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
-      status: 'pending',
-      realizedDate: null,
-      priority: activity.priority || 'medium',
     };
     setActivities((prev) => [...prev, newActivity]);
   };

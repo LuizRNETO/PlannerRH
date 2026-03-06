@@ -44,6 +44,7 @@ export function AnalyticsView({ activities }: AnalyticsViewProps) {
 
     const labels: Record<string, string> = {
       pending: 'Pendente',
+      in_progress: 'Em Andamento',
       completed: 'Concluído',
       cancelled: 'Cancelado',
     };
@@ -57,6 +58,7 @@ export function AnalyticsView({ activities }: AnalyticsViewProps) {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const STATUS_COLORS = {
     'Pendente': '#FBBF24', // yellow-400
+    'Em Andamento': '#6366F1', // indigo-500
     'Concluído': '#10B981', // emerald-500
     'Cancelado': '#EF4444', // red-500
   };

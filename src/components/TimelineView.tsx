@@ -23,7 +23,8 @@ import {
   Zap,
   Users,
   GraduationCap,
-  PartyPopper
+  PartyPopper,
+  Play
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -31,40 +32,43 @@ interface TimelineViewProps {
   activities: Activity[];
   onEditActivity: (activity: Activity) => void;
   onMarkRealized: (activity: Activity) => void;
+  onStatusChange: (activityId: string, status: Activity['status']) => void;
 }
 
-export function TimelineView({ activities, onEditActivity, onMarkRealized }: TimelineViewProps) {
+export function TimelineView({ activities, onEditActivity, onMarkRealized, onStatusChange }: TimelineViewProps) {
   const [daysToShow, setDaysToShow] = useState(30);
 
   const timelineData = useMemo(() => {
     const today = startOfDay(new Date());
     const endDate = addDays(today, daysToShow);
     
-    // 1. Find overdue activities (only 'once' or past instances of recurring? 
-    // For simplicity, let's just show 'pending' activities with plannedDate < today and frequency 'once'
-    // Recurring ones are tricky if we don't track individual instances. 
-    // Let's stick to the "Calendar" logic: we project activities onto dates.
-    // So "Overdue" is just activities strictly scheduled for dates before today that are pending.
-    // But since we generate instances, we can just look back a bit or just show non-recurring overdue.
-    
+    // 1. Find overdue activities
+    // Activities that are pending AND past their planned date
     const overdueActivities = activities.filter(a => 
       a.status === 'pending' && 
       isBefore(parseISO(a.plannedDate), today) &&
       a.frequency === 'once' // Only show non-recurring as overdue to avoid clutter
     );
 
-    // 2. Generate future days
+    // 2. Find In Progress activities (regardless of date, or maybe just active ones)
+    const inProgressActivities = activities.filter(a => a.status === 'in_progress');
+
+    // 3. Generate future days
     const days = eachDayOfInterval({ start: today, end: endDate });
     
     const futureGroups = days.map(day => {
-      const dayActivities = activities.filter(activity => isActivityScheduledForDate(activity, day));
+      // Exclude in_progress from future groups to avoid duplication if we show them at top
+      const dayActivities = activities.filter(activity => 
+        isActivityScheduledForDate(activity, day) && 
+        activity.status !== 'in_progress'
+      );
       return {
         date: day,
         activities: dayActivities
       };
-    }); // Removed filter to show all days
+    }); 
 
-    return { overdueActivities, futureGroups };
+    return { overdueActivities, inProgressActivities, futureGroups };
   }, [activities, daysToShow]);
 
   const getTypeIcon = (type: Activity['type']) => {
@@ -110,6 +114,85 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
         {/* Central Line with Gradient */}
         <div className="absolute left-4 md:left-1/2 md:-translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500 via-purple-500 to-transparent opacity-30 dark:opacity-50" />
         
+        {/* In Progress Section */}
+        {timelineData.inProgressActivities.length > 0 && (
+          <div className="relative mb-12">
+            <div className="sticky top-0 z-20 py-4 pointer-events-none">
+               <div className="flex items-center justify-center">
+                 <span className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-full shadow-sm backdrop-blur-sm flex items-center gap-2">
+                   <Play className="w-3 h-3 fill-current animate-pulse" />
+                   Em Andamento
+                 </span>
+               </div>
+            </div>
+            
+            <div className="space-y-6">
+              {timelineData.inProgressActivities.map(activity => (
+                <div key={activity.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  {/* Icon Dot */}
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-gray-900 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 shadow-md shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 md:absolute md:left-1/2 md:transform z-10">
+                    <Play className="w-5 h-5 fill-current" />
+                  </div>
+                  
+                  {/* Card */}
+                  <div className="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white dark:bg-gray-800 rounded-xl border-2 border-indigo-200 dark:border-indigo-500/50 shadow-md hover:shadow-lg transition-all relative overflow-hidden group/card ml-auto md:ml-0">
+                    <div className="absolute top-0 right-0 p-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                        <Play className="w-3 h-3 fill-current animate-pulse" />
+                        Ativo
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-start mb-2 pr-20">
+                      <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 w-fit", getTypeColor(activity.type))}>
+                        {getTypeIcon(activity.type)}
+                        {activity.type}
+                      </span>
+                    </div>
+                    <div className="mb-1">
+                      <span className={cn("text-xs font-medium flex items-center gap-1", 
+                        isBefore(parseISO(activity.plannedDate), startOfDay(new Date())) ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                      )}>
+                        <CalendarIcon className="w-3 h-3" />
+                        {format(parseISO(activity.plannedDate), "d 'de' MMM", { locale: ptBR })}
+                        {isBefore(parseISO(activity.plannedDate), startOfDay(new Date())) && (
+                          <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1 rounded">Atrasado</span>
+                        )}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{activity.title}</h3>
+                    {activity.description && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{activity.description}</p>
+                    )}
+                    <div className="flex justify-end items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-1 mr-auto">
+                         <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkRealized(activity);
+                              }}
+                              className="text-gray-400 hover:text-emerald-500 dark:text-gray-500 dark:hover:text-emerald-400 transition-colors p-1 flex items-center gap-1"
+                              title="Concluir"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                              <span className="text-xs font-medium">Concluir</span>
+                            </button>
+                         </div>
+                      </div>
+                      <button
+                        onClick={() => onEditActivity(activity)}
+                        className="text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 underline"
+                      >
+                        Ver detalhes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Overdue Section */}
         {timelineData.overdueActivities.length > 0 && (
           <div className="relative mb-12">
@@ -153,7 +236,52 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
                     {activity.description && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{activity.description}</p>
                     )}
-                    <div className="flex justify-end">
+                    <div className="flex justify-end items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-1 mr-auto">
+                          {activity.status === 'pending' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStatusChange(activity.id, 'in_progress');
+                              }}
+                              className="text-gray-400 hover:text-indigo-500 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors p-1"
+                              title="Iniciar Atividade"
+                            >
+                              <Play className="w-4 h-4" />
+                            </button>
+                          )}
+                          
+                          {activity.status === 'in_progress' && (
+                             <div className="flex items-center gap-1">
+                                <span className="text-indigo-500 dark:text-indigo-400 animate-pulse p-1" title="Em Andamento">
+                                   <Play className="w-4 h-4 fill-current" />
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRealized(activity);
+                                  }}
+                                  className="text-gray-400 hover:text-emerald-500 dark:text-gray-500 dark:hover:text-emerald-400 transition-colors p-1"
+                                  title="Concluir"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                             </div>
+                          )}
+
+                          {activity.status === 'pending' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkRealized(activity);
+                              }}
+                              className="text-gray-400 hover:text-emerald-500 dark:text-gray-500 dark:hover:text-emerald-400 transition-colors p-1 ml-1"
+                              title="Concluir"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                      </div>
                       <button
                         onClick={() => onEditActivity(activity)}
                         className="text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 underline"
@@ -255,13 +383,44 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                             {activity.type}
                           </span>
-                          {activity.status !== 'completed' && (
+                          {activity.status === 'pending' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStatusChange(activity.id, 'in_progress');
+                              }}
+                              className="text-gray-300 hover:text-indigo-500 dark:text-gray-600 dark:hover:text-indigo-400 transition-colors p-1 -mr-2 -mt-2"
+                              title="Iniciar Atividade"
+                            >
+                              <Play className="w-5 h-5" />
+                            </button>
+                          )}
+                          
+                          {activity.status === 'in_progress' && (
+                             <div className="flex items-center gap-1 -mr-2 -mt-2">
+                                <span className="text-indigo-500 dark:text-indigo-400 animate-pulse p-1" title="Em Andamento">
+                                   <Play className="w-5 h-5 fill-current" />
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRealized(activity);
+                                  }}
+                                  className="text-gray-300 hover:text-emerald-500 dark:text-gray-600 dark:hover:text-emerald-400 transition-colors p-1"
+                                  title="Concluir"
+                                >
+                                  <CheckCircle className="w-5 h-5" />
+                                </button>
+                             </div>
+                          )}
+
+                          {activity.status === 'pending' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onMarkRealized(activity);
                               }}
-                              className="text-gray-300 hover:text-emerald-500 dark:text-gray-600 dark:hover:text-emerald-400 transition-colors p-1 -mr-2 -mt-2"
+                              className="text-gray-300 hover:text-emerald-500 dark:text-gray-600 dark:hover:text-emerald-400 transition-colors p-1 -mr-2 -mt-2 ml-1"
                               title="Concluir"
                             >
                               <CheckCircle className="w-5 h-5" />

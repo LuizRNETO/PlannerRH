@@ -100,6 +100,7 @@ export function FilterBar({
         >
           <option value="all">Todos Status</option>
           <option value="pending">Pendente</option>
+          <option value="in_progress">Em Andamento</option>
           <option value="completed">Concluído</option>
           <option value="cancelled">Cancelado</option>
         </select>

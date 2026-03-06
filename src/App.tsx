@@ -17,6 +17,7 @@ import { FilterBar, FilterType, FilterPriority, FilterStatus, FilterDateRange, F
 import { ReportingDashboard } from './components/ReportingDashboard';
 import { useActivities } from './hooks/useActivities';
 import { Activity } from './types';
+import { ASSIGNEES } from './constants';
 import { Plus, LayoutGrid, List, Kanban, PieChart, GitGraph, BarChartHorizontal, FileBarChart, Moon, Sun } from 'lucide-react';
 import { cn } from './lib/utils';
 import { isToday, isThisWeek, isThisMonth, isBefore, parseISO, startOfDay } from 'date-fns';
@@ -54,11 +55,12 @@ export default function App() {
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
   // Get unique assignees
-  const uniqueAssignees = Array.from(new Set(
-    activities
+  const uniqueAssignees = Array.from(new Set([
+    ...ASSIGNEES,
+    ...activities
       .map(a => a.assignee)
       .filter((a): a is string => !!a && a.trim() !== '')
-  )).sort();
+  ])).sort();
 
   // Filter Logic
   const filteredActivities = activities.filter(activity => {
@@ -142,10 +144,15 @@ export default function App() {
   };
 
   const handleSaveActivity = (activityData: any) => {
+    const dataToSave = { ...activityData };
+    if (dataToSave.status === 'in_progress' && !dataToSave.startDate) {
+      dataToSave.startDate = new Date().toISOString().split('T')[0];
+    }
+
     if (selectedActivity) {
-      updateActivity(selectedActivity.id, activityData);
+      updateActivity(selectedActivity.id, dataToSave);
     } else {
-      addActivity(activityData);
+      addActivity(dataToSave);
     }
     setIsModalOpen(false);
   };
@@ -169,7 +176,14 @@ export default function App() {
   };
 
   const handleStatusChange = (activityId: string, newStatus: Activity['status']) => {
-    updateActivity(activityId, { status: newStatus });
+    const activity = activities.find(a => a.id === activityId);
+    const updates: Partial<Activity> = { status: newStatus };
+    
+    if (newStatus === 'in_progress' && activity && !activity.startDate) {
+      updates.startDate = new Date().toISOString().split('T')[0];
+    }
+    
+    updateActivity(activityId, updates);
   };
 
   return (
@@ -337,6 +351,7 @@ export default function App() {
               onEditActivity={handleEditActivity}
               onDeleteActivity={handleDeleteActivity}
               onMarkRealized={handleMarkRealized}
+              onStartActivity={(activity) => handleStatusChange(activity.id, 'in_progress')}
             />
           )}
           {viewMode === 'kanban' && (
@@ -355,6 +370,7 @@ export default function App() {
               activities={filteredActivities}
               onEditActivity={handleEditActivity}
               onMarkRealized={handleMarkRealized}
+              onStatusChange={handleStatusChange}
             />
           )}
           {viewMode === 'gantt' && (

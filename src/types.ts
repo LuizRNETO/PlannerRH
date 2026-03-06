@@ -19,8 +19,9 @@ export interface Activity {
   intervalUnit?: IntervalUnit;
   priority: Priority;
   plannedDate: string; // ISO date string
+  startDate?: string | null; // ISO date string
   realizedDate?: string | null; // ISO date string
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: string;
   subActivities?: SubActivity[];
   estimatedHours?: number;

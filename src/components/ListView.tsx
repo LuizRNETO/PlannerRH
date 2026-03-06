@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit2, Trash2, CheckCircle, Clock, AlertCircle, Repeat } from 'lucide-react';
+import { Edit2, Trash2, CheckCircle, Clock, AlertCircle, Repeat, Play } from 'lucide-react';
 import { Activity } from '../types';
 import { cn } from '../lib/utils';
 
@@ -10,9 +10,10 @@ interface ListViewProps {
   onEditActivity: (activity: Activity) => void;
   onDeleteActivity: (id: string) => void;
   onMarkRealized: (activity: Activity) => void;
+  onStartActivity: (activity: Activity) => void;
 }
 
-export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkRealized }: ListViewProps) {
+export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkRealized, onStartActivity }: ListViewProps) {
   const [sortField, setSortField] = useState<'plannedDate' | 'title' | 'status' | 'priority'>('plannedDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [filterStatus, setFilterStatus] = useState<Activity['status'] | 'all'>('all');
@@ -65,6 +66,8 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
     switch (status) {
       case 'completed':
         return 'bg-emerald-100 text-emerald-800';
+      case 'in_progress':
+        return 'bg-indigo-100 text-indigo-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
@@ -114,6 +117,7 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
         >
           <option value="all">Todos os Status</option>
           <option value="pending">Pendente</option>
+          <option value="in_progress">Em Andamento</option>
           <option value="completed">Concluído</option>
           <option value="cancelled">Cancelado</option>
         </select>
@@ -202,11 +206,22 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
                 </td>
                 <td className="px-6 py-4">
                   <span className={cn('px-2.5 py-0.5 rounded-full text-xs font-medium capitalize', getStatusColor(activity.status))}>
-                    {activity.status === 'pending' ? 'Pendente' : activity.status === 'completed' ? 'Concluído' : 'Cancelado'}
+                    {activity.status === 'pending' ? 'Pendente' : 
+                     activity.status === 'in_progress' ? 'Em Andamento' :
+                     activity.status === 'completed' ? 'Concluído' : 'Cancelado'}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {activity.status === 'pending' && (
+                      <button
+                        onClick={() => onStartActivity(activity)}
+                        className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"
+                        title="Iniciar Atividade"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                      </button>
+                    )}
                     {activity.status !== 'completed' && (
                       <button
                         onClick={() => onMarkRealized(activity)}
