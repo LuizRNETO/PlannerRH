@@ -25,43 +25,43 @@ export function Stats({ activities }: StatsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-        <div className="p-3 bg-indigo-50 rounded-lg">
-          <Calendar className="w-6 h-6 text-indigo-600" />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 transition-colors">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+          <Calendar className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Total de Atividades</p>
-          <p className="text-2xl font-semibold text-gray-900">{total}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Atividades</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{total}</p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-        <div className="p-3 bg-emerald-50 rounded-lg">
-          <CheckCircle className="w-6 h-6 text-emerald-600" />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 transition-colors">
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
+          <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Taxa de Conclusão</p>
-          <p className="text-2xl font-semibold text-gray-900">{completionRate}%</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Taxa de Conclusão</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{completionRate}%</p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-        <div className="p-3 bg-orange-50 rounded-lg">
-          <Clock className="w-6 h-6 text-orange-600" />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 transition-colors">
+        <div className="p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+          <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Pendentes</p>
-          <p className="text-2xl font-semibold text-gray-900">{pending}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendentes</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{pending}</p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-        <div className="p-3 bg-red-50 rounded-lg">
-          <AlertCircle className="w-6 h-6 text-red-600" />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 transition-colors">
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
+          <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Atrasadas</p>
-          <p className="text-2xl font-semibold text-gray-900">{delayed}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Atrasadas</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{delayed}</p>
         </div>
       </div>
     </div>

@@ -81,23 +81,23 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
 
   const getTypeColor = (type: Activity['type']) => {
     switch (type) {
-      case 'project': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'routine': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'simple': return 'bg-gray-100 text-gray-700 border-gray-200';
-      case 'meeting': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'training': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'event': return 'bg-pink-100 text-pink-700 border-pink-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'project': return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+      case 'routine': return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+      case 'simple': return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+      case 'meeting': return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+      case 'training': return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+      case 'event': return 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto animate-in fade-in duration-500">
-      <div className="flex justify-end mb-4">
+    <div className="max-w-3xl mx-auto animate-in fade-in duration-500 pb-20">
+      <div className="flex justify-end mb-8">
         <select 
           value={daysToShow} 
           onChange={(e) => setDaysToShow(Number(e.target.value))}
-          className="text-sm border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none p-1.5 bg-white"
+          className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         >
           <option value={7}>Próximos 7 dias</option>
           <option value={14}>Próximos 14 dias</option>
@@ -106,31 +106,33 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
         </select>
       </div>
 
-      <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent">
+      <div className="space-y-8 relative">
+        {/* Central Line with Gradient */}
+        <div className="absolute left-4 md:left-1/2 md:-translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500 via-purple-500 to-transparent opacity-30 dark:opacity-50" />
         
         {/* Overdue Section */}
         {timelineData.overdueActivities.length > 0 && (
-          <div className="relative">
-            <div className="sticky top-0 z-10 bg-gray-50 py-2 mb-4">
+          <div className="relative mb-12">
+            <div className="sticky top-0 z-20 py-4 pointer-events-none">
                <div className="flex items-center justify-center">
-                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 rounded-full shadow-sm">
+                 <span className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full shadow-sm backdrop-blur-sm">
                    Atrasadas
                  </span>
                </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {timelineData.overdueActivities.map(activity => (
                 <div key={activity.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   {/* Icon Dot */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-red-100 text-red-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 md:absolute md:left-1/2 md:transform">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-gray-900 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 shadow-md shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 md:absolute md:left-1/2 md:transform z-10">
                     <AlertCircle className="w-5 h-5" />
                   </div>
                   
                   {/* Card */}
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white rounded-xl border border-red-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                  <div className="w-[calc(100%-3.5rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white dark:bg-gray-800 rounded-xl border border-red-100 dark:border-red-900/50 shadow-sm hover:shadow-md transition-all relative overflow-hidden group/card ml-auto md:ml-0">
                     <div className="absolute top-0 right-0 p-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 text-[10px] font-bold uppercase tracking-wider text-red-600 border border-red-100">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 dark:bg-red-900/30 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800">
                         <AlertCircle className="w-3 h-3" />
                         Atrasado
                       </span>
@@ -142,19 +144,19 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
                       </span>
                     </div>
                     <div className="mb-1">
-                      <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+                      <span className="text-xs text-red-500 dark:text-red-400 font-medium flex items-center gap-1">
                         <CalendarIcon className="w-3 h-3" />
                         {format(parseISO(activity.plannedDate), "d 'de' MMM", { locale: ptBR })}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">{activity.title}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{activity.title}</h3>
                     {activity.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-3">{activity.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{activity.description}</p>
                     )}
                     <div className="flex justify-end">
                       <button
                         onClick={() => onEditActivity(activity)}
-                        className="text-xs text-gray-500 hover:text-indigo-600 underline"
+                        className="text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 underline"
                       >
                         Ver detalhes
                       </button>
@@ -173,18 +175,18 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
           
           if (!hasActivities) {
             return (
-              <div key={group.date.toISOString()} className="relative py-2 flex items-center justify-center group/day">
+              <div key={group.date.toISOString()} className="relative py-3 flex items-center justify-center group/day md:justify-center justify-start pl-4 md:pl-0">
                 {/* Subtle Dot for Empty Days */}
                 <div 
                   className={cn(
-                    "relative z-10 w-2 h-2 rounded-full border transition-all duration-200",
+                    "relative z-10 w-2.5 h-2.5 rounded-full border-2 transition-all duration-300",
                     isTodayDate 
-                      ? "bg-indigo-600 border-indigo-600 w-3 h-3" 
-                      : "bg-white border-gray-300 group-hover/day:border-gray-400 group-hover/day:scale-125"
+                      ? "bg-indigo-600 border-indigo-600 w-4 h-4 ring-4 ring-indigo-100 dark:ring-indigo-900/50" 
+                      : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 group-hover/day:border-indigo-400 group-hover/day:scale-125"
                   )}
                   title={format(group.date, "dd 'de' MMMM", { locale: ptBR })}
                 >
-                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 opacity-0 group-hover/day:opacity-100 transition-opacity whitespace-nowrap bg-white px-1 rounded shadow-sm border border-gray-100">
+                   <span className="absolute left-8 md:left-6 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 dark:text-gray-400 opacity-0 group-hover/day:opacity-100 transition-opacity whitespace-nowrap bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-100 dark:border-gray-700 z-20 pointer-events-none">
                      {format(group.date, "dd MMM", { locale: ptBR })}
                    </span>
                 </div>
@@ -193,95 +195,105 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized }: Tim
           }
 
           return (
-          <div key={group.date.toISOString()} className="relative py-6">
-             <div className="sticky top-20 z-10 mb-8 pointer-events-none">
-               <div className="flex items-center justify-center">
-                 <div className="relative">
-                   {/* Axis Indicator for Days with Activities */}
-                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-indigo-100 rounded-full -z-10 animate-pulse"></div>
-                   
-                   <span className={cn(
-                     "px-4 py-1.5 text-sm font-bold uppercase tracking-wider rounded-full shadow-sm border flex items-center gap-2 transition-colors bg-white pointer-events-auto",
-                     isTodayDate 
-                      ? "text-indigo-600 border-indigo-200 ring-4 ring-indigo-50" 
-                      : "text-gray-700 border-gray-200"
-                   )}>
-                     {isTodayDate ? 'Hoje' : isTomorrow(group.date) ? 'Amanhã' : format(group.date, "EEEE, d 'de' MMMM", { locale: ptBR })}
-                     <span className="flex h-2 w-2 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                      </span>
-                   </span>
-                 </div>
+          <div key={group.date.toISOString()} className="relative py-8">
+             {/* Date Header / Milestone */}
+             <div className="flex items-center justify-center mb-8 relative z-10">
+               <div className={cn(
+                 "px-5 py-2 text-sm font-bold uppercase tracking-wider rounded-full shadow-sm border flex items-center gap-2 transition-colors backdrop-blur-sm",
+                 isTodayDate 
+                  ? "bg-indigo-600 text-white border-indigo-600 ring-4 ring-indigo-100 dark:ring-indigo-900/30" 
+                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700"
+               )}>
+                 {isTodayDate ? 'Hoje' : isTomorrow(group.date) ? 'Amanhã' : format(group.date, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                 {isTodayDate && (
+                   <span className="flex h-2 w-2 relative ml-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    </span>
+                 )}
                </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-12">
               {group.activities.map((activity, index) => (
-                <div key={`${activity.id}-${group.date.toISOString()}`} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                  {/* Icon Dot */}
+                <div key={`${activity.id}-${group.date.toISOString()}`} className="relative flex items-center justify-between md:justify-center group">
+                  
+                  {/* Connector Line (Desktop) */}
                   <div className={cn(
-                    "flex items-center justify-center w-12 h-12 rounded-2xl border-4 border-white shadow-sm shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 md:absolute md:left-1/2 md:transform z-10 transition-transform group-hover:scale-110 duration-200",
+                    "hidden md:block absolute top-1/2 -translate-y-1/2 h-px w-[calc(50%-3rem)] -z-10 transition-colors duration-300",
+                    index % 2 === 0 ? "right-[50%] mr-6 bg-gradient-to-r from-transparent to-gray-300 dark:to-gray-600" : "left-[50%] ml-6 bg-gradient-to-l from-transparent to-gray-300 dark:to-gray-600"
+                  )} />
+
+                  {/* Icon Dot (Center) */}
+                  <div className={cn(
+                    "absolute left-4 md:left-1/2 md:-translate-x-1/2 flex items-center justify-center w-12 h-12 rounded-2xl border-4 border-white dark:border-gray-900 shadow-md shrink-0 z-10 transition-transform group-hover:scale-110 duration-200",
                     getTypeColor(activity.type).split(' ')[0], // Use background color from helper
                     getTypeColor(activity.type).split(' ')[1]  // Use text color from helper
                   )}>
                     {getTypeIcon(activity.type)}
                   </div>
                   
-                  {/* Card */}
-                  <div 
-                    className={cn(
-                      "w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group/card",
-                      activity.status === 'completed' ? "border-gray-200 opacity-75" : "border-gray-200 hover:border-indigo-300"
-                    )}
-                    onClick={() => onEditActivity(activity)}
-                  >
-                    {/* Color Strip */}
-                    <div className={cn("h-1 w-full", getTypeColor(activity.type).split(' ')[0].replace('bg-', 'bg-').replace('100', '500'))} />
-                    
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                          {activity.type}
-                        </span>
-                        {activity.status !== 'completed' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onMarkRealized(activity);
-                            }}
-                            className="text-gray-300 hover:text-emerald-500 transition-colors p-1 -mr-2 -mt-2"
-                            title="Concluir"
-                          >
-                            <CheckCircle className="w-5 h-5" />
-                          </button>
+                  {/* Card Container */}
+                  <div className={cn(
+                    "w-full pl-20 md:pl-0 flex",
+                    index % 2 === 0 ? "md:justify-start md:pr-[50%]" : "md:justify-end md:pl-[50%]"
+                  )}>
+                    {/* Card */}
+                    <div 
+                      className={cn(
+                        "w-full md:w-[calc(100%-3rem)] bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden group/card relative",
+                        index % 2 === 0 ? "md:mr-auto" : "md:ml-auto",
+                        activity.status === 'completed' ? "border-gray-200 dark:border-gray-700 opacity-60" : "border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-500"
+                      )}
+                      onClick={() => onEditActivity(activity)}
+                    >
+                      {/* Color Strip */}
+                      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", getTypeColor(activity.type).split(' ')[0].replace('bg-', 'bg-').replace('100', '500'))} />
+                      
+                      <div className="p-5 pl-7">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                            {activity.type}
+                          </span>
+                          {activity.status !== 'completed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMarkRealized(activity);
+                              }}
+                              className="text-gray-300 hover:text-emerald-500 dark:text-gray-600 dark:hover:text-emerald-400 transition-colors p-1 -mr-2 -mt-2"
+                              title="Concluir"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        <h3 className={cn("font-bold text-lg mb-2 leading-tight", activity.status === 'completed' ? "text-gray-500 dark:text-gray-500 line-through" : "text-gray-900 dark:text-white")}>
+                          {activity.title}
+                        </h3>
+                        
+                        {activity.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">{activity.description}</p>
+                        )}
+
+                        {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700">
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                              <span>Progresso</span>
+                              <span>{Math.round((activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100)}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-indigo-500 rounded-full transition-all duration-500 ease-out"
+                                style={{ 
+                                  width: `${(activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100}%` 
+                                }}
+                              />
+                            </div>
+                          </div>
                         )}
                       </div>
-                      
-                      <h3 className={cn("font-bold text-lg mb-2 leading-tight", activity.status === 'completed' ? "text-gray-500 line-through" : "text-gray-900")}>
-                        {activity.title}
-                      </h3>
-                      
-                      {activity.description && (
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{activity.description}</p>
-                      )}
-
-                      {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-50">
-                          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-                            <span>Progresso</span>
-                            <span>{Math.round((activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100)}%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-indigo-500 rounded-full transition-all duration-500 ease-out"
-                              style={{ 
-                                width: `${(activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

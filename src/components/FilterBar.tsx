@@ -18,6 +18,9 @@ interface FilterBarProps {
   onDateRangeChange: (range: FilterDateRange) => void;
   selectedSubStatus: FilterSubStatus;
   onSubStatusChange: (status: FilterSubStatus) => void;
+  assignees: string[];
+  selectedAssignee: string;
+  onAssigneeChange: (assignee: string) => void;
   onClearFilters: () => void;
 }
 
@@ -34,6 +37,9 @@ export function FilterBar({
   onDateRangeChange,
   selectedSubStatus,
   onSubStatusChange,
+  assignees,
+  selectedAssignee,
+  onAssigneeChange,
   onClearFilters
 }: FilterBarProps) {
   const hasActiveFilters = selectedType !== 'all' || 
@@ -41,19 +47,20 @@ export function FilterBar({
     selectedStatus !== 'all' || 
     selectedDateRange !== 'all' ||
     selectedSubStatus !== 'all' ||
+    selectedAssignee !== 'all' ||
     searchTerm !== '';
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:gap-4 flex-wrap">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4 md:space-y-0 md:flex md:items-center md:gap-4 flex-wrap transition-colors">
       {/* Search */}
       <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
         <input
           type="text"
           placeholder="Buscar atividades..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
         />
       </div>
 
@@ -62,7 +69,7 @@ export function FilterBar({
         <select
           value={selectedType}
           onChange={(e) => onTypeChange(e.target.value as FilterType)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">Todos os Tipos</option>
           <option value="project">Projetos</option>
@@ -77,7 +84,7 @@ export function FilterBar({
         <select
           value={selectedPriority}
           onChange={(e) => onPriorityChange(e.target.value as FilterPriority)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">Todas Prioridades</option>
           <option value="high">Alta</option>
@@ -89,7 +96,7 @@ export function FilterBar({
         <select
           value={selectedStatus}
           onChange={(e) => onStatusChange(e.target.value as FilterStatus)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">Todos Status</option>
           <option value="pending">Pendente</option>
@@ -101,7 +108,7 @@ export function FilterBar({
         <select
           value={selectedDateRange}
           onChange={(e) => onDateRangeChange(e.target.value as FilterDateRange)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">Todas as Datas</option>
           <option value="today">Hoje</option>
@@ -114,7 +121,7 @@ export function FilterBar({
         <select
           value={selectedSubStatus}
           onChange={(e) => onSubStatusChange(e.target.value as FilterSubStatus)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">Sub-atividades (Todas)</option>
           <option value="has-pending">Com Pendências</option>
@@ -122,11 +129,24 @@ export function FilterBar({
           <option value="no-subs">Sem Sub-atividades</option>
         </select>
 
+        {/* Assignee Filter */}
+        <select
+          value={selectedAssignee}
+          onChange={(e) => onAssigneeChange(e.target.value)}
+          className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="all">Todos Responsáveis</option>
+          <option value="unassigned">Sem Responsável</option>
+          {assignees.map(assignee => (
+            <option key={assignee} value={assignee}>{assignee}</option>
+          ))}
+        </select>
+
         {/* Clear Filters */}
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
+            className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-2 py-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
           >
             <X className="w-4 h-4" />
             Limpar

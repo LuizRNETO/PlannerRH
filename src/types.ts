@@ -23,6 +23,9 @@ export interface Activity {
   status: 'pending' | 'completed' | 'cancelled';
   createdAt: string;
   subActivities?: SubActivity[];
+  estimatedHours?: number;
+  actualHours?: number;
+  assignee?: string;
 }
 
 export interface CalendarDay {

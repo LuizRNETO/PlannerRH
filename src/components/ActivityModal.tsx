@@ -31,6 +31,9 @@ export function ActivityModal({
     priority: 'medium' as Priority,
     plannedDate: '',
     description: '',
+    estimatedHours: 0,
+    actualHours: 0,
+    assignee: '',
   });
   const [subActivities, setSubActivities] = useState<SubActivity[]>([]);
   const [newSubActivity, setNewSubActivity] = useState('');
@@ -46,6 +49,9 @@ export function ActivityModal({
         priority: activity.priority || 'medium',
         plannedDate: activity.plannedDate,
         description: activity.description || '',
+        estimatedHours: activity.estimatedHours || 0,
+        actualHours: activity.actualHours || 0,
+        assignee: activity.assignee || '',
       });
       setSubActivities(activity.subActivities || []);
     } else if (initialDate) {
@@ -58,6 +64,9 @@ export function ActivityModal({
         priority: 'medium',
         plannedDate: format(initialDate, 'yyyy-MM-dd'),
         description: '',
+        estimatedHours: 0,
+        actualHours: 0,
+        assignee: '',
       });
       setSubActivities([]);
     }
@@ -96,22 +105,22 @@ export function ActivityModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 transition-colors">
+        <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
             {activity ? 'Editar Atividade' : 'Nova Atividade'}
           </h3>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-3 space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
               Título
             </label>
             <input
@@ -119,20 +128,20 @@ export function ActivityModal({
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="ex: Relatório Mensal"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                 Tipo
               </label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as ActivityType })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="simple">Simples</option>
                 <option value="routine">Rotina</option>
@@ -143,13 +152,13 @@ export function ActivityModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                 Frequência
               </label>
               <select
                 value={formData.frequency}
                 onChange={(e) => setFormData({ ...formData, frequency: e.target.value as Frequency })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="once">Única</option>
                 <option value="daily">Diária</option>
@@ -162,9 +171,9 @@ export function ActivityModal({
           </div>
 
           {formData.frequency === 'custom' && (
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-[10px] font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                   Repetir a cada
                 </label>
                 <input
@@ -172,17 +181,17 @@ export function ActivityModal({
                   min="1"
                   value={formData.interval}
                   onChange={(e) => setFormData({ ...formData, interval: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-[10px] font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                   Unidade
                 </label>
                 <select
                   value={formData.intervalUnit}
                   onChange={(e) => setFormData({ ...formData, intervalUnit: e.target.value as IntervalUnit })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="days">Dias</option>
                   <option value="weeks">Semanas</option>
@@ -192,42 +201,87 @@ export function ActivityModal({
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prioridade
-            </label>
-            <select
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value as Priority })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
-            >
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Prioridade
+              </label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as Priority })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Data Planejada
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.plannedDate}
+                onChange={(e) => setFormData({ ...formData, plannedDate: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-1">
+               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Horas Est.
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={formData.estimatedHours || ''}
+                onChange={(e) => setFormData({ ...formData, estimatedHours: parseFloat(e.target.value) || 0 })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="0"
+              />
+            </div>
+             <div className="col-span-1">
+               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Horas Reais
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={formData.actualHours || ''}
+                onChange={(e) => setFormData({ ...formData, actualHours: parseFloat(e.target.value) || 0 })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="0"
+              />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Responsável
+              </label>
+              <input
+                type="text"
+                value={formData.assignee || ''}
+                onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Nome"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Data Planejada
-            </label>
-            <input
-              type="date"
-              required
-              value={formData.plannedDate}
-              onChange={(e) => setFormData({ ...formData, plannedDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
               Descrição (Opcional)
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none h-24"
+              className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none h-16 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Adicione detalhes..."
             />
           </div>
@@ -235,18 +289,18 @@ export function ActivityModal({
           {formData.type === 'project' && (
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
                   Sub-atividades
                 </label>
                 {subActivities.length > 0 && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
                     {subActivities.filter(s => s.completed).length}/{subActivities.length} concluídas
                   </span>
                 )}
               </div>
 
               {subActivities.length > 0 && (
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
                   <div 
                     className="h-full bg-indigo-500 rounded-full transition-all duration-300"
                     style={{ 
@@ -262,32 +316,32 @@ export function ActivityModal({
                   value={newSubActivity}
                   onChange={(e) => setNewSubActivity(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubActivity())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
+                  className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="Nova sub-atividade..."
                 />
                 <button
                   type="button"
                   onClick={addSubActivity}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+                  className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                 {subActivities.map((sub) => (
                   <div 
                     key={sub.id} 
-                    className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg group cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-lg group cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     onClick={() => toggleSubActivity(sub.id)}
                   >
                     <input
                       type="checkbox"
                       checked={sub.completed}
                       onChange={() => {}} // Handled by parent div
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 pointer-events-none"
+                      className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 pointer-events-none w-3.5 h-3.5"
                     />
-                    <span className={`flex-1 text-sm ${sub.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                    <span className={`flex-1 text-xs ${sub.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
                       {sub.title}
                     </span>
                     <button
@@ -296,14 +350,14 @@ export function ActivityModal({
                         e.stopPropagation();
                         removeSubActivity(sub.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-600 transition-all"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
                 {subActivities.length === 0 && (
-                  <p className="text-xs text-gray-400 italic text-center py-2">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic text-center py-1">
                     Nenhuma sub-atividade adicionada
                   </p>
                 )}
@@ -311,7 +365,7 @@ export function ActivityModal({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
             {activity && onDelete && (
               <button
                 type="button"
@@ -321,7 +375,7 @@ export function ActivityModal({
                     onClose();
                   }
                 }}
-                className="mr-auto text-red-600 hover:text-red-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                className="mr-auto text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
               >
                 Excluir
               </button>
@@ -329,15 +383,15 @@ export function ActivityModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
             >
-              {activity ? 'Salvar Alterações' : 'Criar Atividade'}
+              {activity ? 'Salvar' : 'Criar'}
             </button>
           </div>
         </form>

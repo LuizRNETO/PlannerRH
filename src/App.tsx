@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from './components/Calendar';
 import { Stats } from './components/Stats';
 import { ActivityModal } from './components/ActivityModal';
@@ -14,13 +14,14 @@ import { TimelineView } from './components/TimelineView';
 import { GanttView } from './components/GanttView';
 import { Notifications } from './components/Notifications';
 import { FilterBar, FilterType, FilterPriority, FilterStatus, FilterDateRange, FilterSubStatus } from './components/FilterBar';
+import { ReportingDashboard } from './components/ReportingDashboard';
 import { useActivities } from './hooks/useActivities';
 import { Activity } from './types';
-import { Plus, LayoutGrid, List, Kanban, PieChart, GitGraph, BarChartHorizontal } from 'lucide-react';
+import { Plus, LayoutGrid, List, Kanban, PieChart, GitGraph, BarChartHorizontal, FileBarChart, Moon, Sun } from 'lucide-react';
 import { cn } from './lib/utils';
 import { isToday, isThisWeek, isThisMonth, isBefore, parseISO, startOfDay } from 'date-fns';
 
-type ViewMode = 'calendar' | 'list' | 'kanban' | 'analytics' | 'timeline' | 'gantt';
+type ViewMode = 'calendar' | 'list' | 'kanban' | 'analytics' | 'timeline' | 'gantt' | 'reporting';
 
 export default function App() {
   const { activities, addActivity, updateActivity, deleteActivity, markAsRealized } = useActivities();
@@ -28,6 +29,20 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedActivity, setSelectedActivity] = useState<Activity | undefined>(undefined);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
   
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,6 +51,14 @@ export default function App() {
   const [selectedStatus, setSelectedStatus] = useState<FilterStatus>('all');
   const [selectedDateRange, setSelectedDateRange] = useState<FilterDateRange>('all');
   const [selectedSubStatus, setSelectedSubStatus] = useState<FilterSubStatus>('all');
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+
+  // Get unique assignees
+  const uniqueAssignees = Array.from(new Set(
+    activities
+      .map(a => a.assignee)
+      .filter((a): a is string => !!a && a.trim() !== '')
+  )).sort();
 
   // Filter Logic
   const filteredActivities = activities.filter(activity => {
@@ -58,6 +81,15 @@ export default function App() {
     // Status
     if (selectedStatus !== 'all' && activity.status !== selectedStatus) {
       return false;
+    }
+
+    // Assignee
+    if (selectedAssignee !== 'all') {
+      if (selectedAssignee === 'unassigned') {
+        if (activity.assignee && activity.assignee.trim() !== '') return false;
+      } else {
+        if (activity.assignee !== selectedAssignee) return false;
+      }
     }
 
     // Date Range
@@ -94,6 +126,7 @@ export default function App() {
     setSelectedStatus('all');
     setSelectedDateRange('all');
     setSelectedSubStatus('all');
+    setSelectedAssignee('all');
   };
 
   const handleAddActivity = (date?: Date) => {
@@ -140,24 +173,34 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Planejamento RH</h1>
-            <p className="text-gray-500 mt-1">Acompanhe atividades planejadas vs. realizadas e projetos.</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Planejamento RH</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Acompanhe atividades planejadas vs. realizadas e projetos.</p>
           </div>
           
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+              title={isDarkMode ? "Modo Claro" : "Modo Escuro"}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
             <Notifications activities={activities} />
             
-            <div className="bg-white p-1 rounded-lg border border-gray-200 flex items-center shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center shadow-sm overflow-x-auto">
               <button
                 onClick={() => setViewMode('calendar')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'calendar' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'calendar' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Calendário"
               >
@@ -167,8 +210,10 @@ export default function App() {
               <button
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'list' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'list' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Lista"
               >
@@ -178,8 +223,10 @@ export default function App() {
               <button
                 onClick={() => setViewMode('kanban')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'kanban' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'kanban' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Kanban"
               >
@@ -189,8 +236,10 @@ export default function App() {
               <button
                 onClick={() => setViewMode('analytics')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'analytics' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'analytics' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Análise"
               >
@@ -200,8 +249,10 @@ export default function App() {
               <button
                 onClick={() => setViewMode('timeline')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'timeline' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'timeline' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Timeline"
               >
@@ -211,22 +262,37 @@ export default function App() {
               <button
                 onClick={() => setViewMode('gantt')}
                 className={cn(
-                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium",
-                  viewMode === 'gantt' ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'gantt' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 )}
                 title="Gantt"
               >
                 <BarChartHorizontal className="w-4 h-4" />
                 <span className="hidden sm:inline">Gantt</span>
               </button>
+              <button
+                onClick={() => setViewMode('reporting')}
+                className={cn(
+                  "p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap",
+                  viewMode === 'reporting' 
+                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                )}
+                title="Relatórios"
+              >
+                <FileBarChart className="w-4 h-4" />
+                <span className="hidden sm:inline">Relatórios</span>
+              </button>
             </div>
 
             <button
               onClick={() => handleAddActivity()}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <Plus className="w-5 h-5" />
-              Nova Atividade
+              <span className="hidden sm:inline">Nova Atividade</span>
             </button>
           </div>
         </div>
@@ -248,6 +314,9 @@ export default function App() {
           onDateRangeChange={setSelectedDateRange}
           selectedSubStatus={selectedSubStatus}
           onSubStatusChange={setSelectedSubStatus}
+          assignees={uniqueAssignees}
+          selectedAssignee={selectedAssignee}
+          onAssigneeChange={setSelectedAssignee}
           onClearFilters={handleClearFilters}
         />
 
@@ -293,6 +362,9 @@ export default function App() {
               activities={filteredActivities}
               onEditActivity={handleEditActivity}
             />
+          )}
+          {viewMode === 'reporting' && (
+            <ReportingDashboard activities={filteredActivities} />
           )}
         </div>
       </div>
