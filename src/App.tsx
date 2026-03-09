@@ -20,7 +20,7 @@ import { Activity } from './types';
 import { ASSIGNEES } from './constants';
 import { Plus, LayoutGrid, List, Kanban, PieChart, GitGraph, BarChartHorizontal, FileBarChart, Moon, Sun } from 'lucide-react';
 import { cn } from './lib/utils';
-import { isToday, isThisWeek, isThisMonth, isBefore, parseISO, startOfDay, addDays, addWeeks, addMonths } from 'date-fns';
+import { isToday, isThisWeek, isThisMonth, isBefore, isAfter, parseISO, startOfDay, addDays, addWeeks, addMonths } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
 type ViewMode = 'calendar' | 'list' | 'kanban' | 'analytics' | 'timeline' | 'gantt' | 'reporting';
@@ -146,7 +146,7 @@ export default function App() {
   };
 
   const handleSaveActivity = (activityData: any) => {
-    const { generateMultiple, occurrences, ...dataToSave } = activityData;
+    const { generateMultiple, recurrenceEndType, occurrences, recurrenceEndDate, ...dataToSave } = activityData;
     
     if (dataToSave.status === 'in_progress' && !dataToSave.startDate) {
       dataToSave.startDate = new Date().toISOString().split('T')[0];
@@ -155,11 +155,16 @@ export default function App() {
     if (selectedActivity) {
       updateActivity(selectedActivity.id, dataToSave);
     } else {
-      if (generateMultiple && occurrences > 1) {
+      if (generateMultiple) {
         const activitiesToCreate = [dataToSave];
         let currentDate = parseISO(dataToSave.plannedDate);
+        let count = 1;
+        const maxOccurrences = 365; // hard limit to prevent infinite loops
         
-        for (let i = 1; i < occurrences; i++) {
+        while (true) {
+          if (recurrenceEndType === 'occurrences' && count >= occurrences) break;
+          if (count >= maxOccurrences) break;
+
           let nextDate = new Date(currentDate);
           
           if (dataToSave.frequency === 'daily') {
@@ -179,6 +184,13 @@ export default function App() {
               nextDate = addMonths(nextDate, dataToSave.interval || 1);
             }
           }
+
+          if (recurrenceEndType === 'date') {
+            const endDate = parseISO(recurrenceEndDate);
+            if (isAfter(startOfDay(nextDate), startOfDay(endDate))) {
+              break;
+            }
+          }
           
           activitiesToCreate.push({
             ...dataToSave,
@@ -191,6 +203,7 @@ export default function App() {
           });
           
           currentDate = nextDate;
+          count++;
         }
         
         addActivities(activitiesToCreate);
