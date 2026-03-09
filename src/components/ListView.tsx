@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit2, Trash2, CheckCircle, Clock, AlertCircle, Repeat, Play } from 'lucide-react';
+import { Edit2, Trash2, CheckCircle, Clock, AlertCircle, Repeat, Play, MessageSquare } from 'lucide-react';
 import { Activity } from '../types';
 import { cn } from '../lib/utils';
 
@@ -147,6 +147,8 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
               >
                 Data Planejada {sortField === 'plannedDate' && (sortDirection === 'asc' ? '↑' : '↓')}
               </th>
+              <th className="px-6 py-3">Data de Início</th>
+              <th className="px-6 py-3">Data de Fim</th>
               <th className="px-6 py-3">Data Realizada</th>
               <th 
                 className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -167,8 +169,14 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
                         <Repeat className="w-3 h-3 text-gray-400 shrink-0" title={`Recorrente: ${getFrequencyLabel(activity.frequency)}`} />
                       )}
                       <span>{activity.title}</span>
+                      {activity.comments && activity.comments.length > 0 && (
+                        <div className="flex items-center gap-1 text-gray-400" title={`${activity.comments.length} comentário(s)`}>
+                          <MessageSquare className="w-3 h-3" />
+                          <span className="text-[10px]">{activity.comments.length}</span>
+                        </div>
+                      )}
                     </div>
-                    {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+                    {activity.subActivities && activity.subActivities.length > 0 && (
                       <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden" title={`${Math.round((activity.subActivities.filter(s => s.completed).length / activity.subActivities.length) * 100)}% concluído`}>
                         <div 
                           className="h-full bg-blue-500 rounded-full transition-all duration-300"
@@ -188,6 +196,12 @@ export function ListView({ activities, onEditActivity, onDeleteActivity, onMarkR
                 </td>
                 <td className="px-6 py-4 text-gray-600">
                   {format(parseISO(activity.plannedDate), 'dd/MM/yyyy')}
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                  {activity.startDate ? format(parseISO(activity.startDate), 'dd/MM/yyyy') : '-'}
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                  {activity.endDate ? format(parseISO(activity.endDate), 'dd/MM/yyyy') : '-'}
                 </td>
                 <td className="px-6 py-4 text-gray-600">
                   {activity.realizedDate ? (

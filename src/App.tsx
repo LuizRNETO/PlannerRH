@@ -20,12 +20,13 @@ import { Activity } from './types';
 import { ASSIGNEES } from './constants';
 import { Plus, LayoutGrid, List, Kanban, PieChart, GitGraph, BarChartHorizontal, FileBarChart, Moon, Sun } from 'lucide-react';
 import { cn } from './lib/utils';
-import { isToday, isThisWeek, isThisMonth, isBefore, parseISO, startOfDay } from 'date-fns';
+import { isToday, isThisWeek, isThisMonth, isBefore, parseISO, startOfDay, addDays, addWeeks, addMonths } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 
 type ViewMode = 'calendar' | 'list' | 'kanban' | 'analytics' | 'timeline' | 'gantt' | 'reporting';
 
 export default function App() {
-  const { activities, addActivity, updateActivity, deleteActivity, markAsRealized } = useActivities();
+  const { activities, addActivity, addActivities, updateActivity, deleteActivity, markAsRealized } = useActivities();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedActivity, setSelectedActivity] = useState<Activity | undefined>(undefined);
@@ -58,7 +59,7 @@ export default function App() {
   const uniqueAssignees = Array.from(new Set([
     ...ASSIGNEES,
     ...activities
-      .map(a => a.assignee)
+      .flatMap(a => a.assignees && a.assignees.length > 0 ? a.assignees : (a.assignee ? [a.assignee] : []))
       .filter((a): a is string => !!a && a.trim() !== '')
   ])).sort();
 
@@ -87,10 +88,11 @@ export default function App() {
 
     // Assignee
     if (selectedAssignee !== 'all') {
+      const activityAssignees = activity.assignees && activity.assignees.length > 0 ? activity.assignees : (activity.assignee ? [activity.assignee] : []);
       if (selectedAssignee === 'unassigned') {
-        if (activity.assignee && activity.assignee.trim() !== '') return false;
+        if (activityAssignees.length > 0) return false;
       } else {
-        if (activity.assignee !== selectedAssignee) return false;
+        if (!activityAssignees.includes(selectedAssignee)) return false;
       }
     }
 
@@ -144,7 +146,8 @@ export default function App() {
   };
 
   const handleSaveActivity = (activityData: any) => {
-    const dataToSave = { ...activityData };
+    const { generateMultiple, occurrences, ...dataToSave } = activityData;
+    
     if (dataToSave.status === 'in_progress' && !dataToSave.startDate) {
       dataToSave.startDate = new Date().toISOString().split('T')[0];
     }
@@ -152,7 +155,48 @@ export default function App() {
     if (selectedActivity) {
       updateActivity(selectedActivity.id, dataToSave);
     } else {
-      addActivity(dataToSave);
+      if (generateMultiple && occurrences > 1) {
+        const activitiesToCreate = [dataToSave];
+        let currentDate = parseISO(dataToSave.plannedDate);
+        
+        for (let i = 1; i < occurrences; i++) {
+          let nextDate = new Date(currentDate);
+          
+          if (dataToSave.frequency === 'daily') {
+            nextDate = addDays(nextDate, 1);
+          } else if (dataToSave.frequency === 'weekly') {
+            nextDate = addWeeks(nextDate, 1);
+          } else if (dataToSave.frequency === 'bi-weekly') {
+            nextDate = addWeeks(nextDate, 2);
+          } else if (dataToSave.frequency === 'monthly') {
+            nextDate = addMonths(nextDate, 1);
+          } else if (dataToSave.frequency === 'custom') {
+            if (dataToSave.intervalUnit === 'days') {
+              nextDate = addDays(nextDate, dataToSave.interval || 1);
+            } else if (dataToSave.intervalUnit === 'weeks') {
+              nextDate = addWeeks(nextDate, dataToSave.interval || 1);
+            } else if (dataToSave.intervalUnit === 'months') {
+              nextDate = addMonths(nextDate, dataToSave.interval || 1);
+            }
+          }
+          
+          activitiesToCreate.push({
+            ...dataToSave,
+            plannedDate: nextDate.toISOString().split('T')[0],
+            status: 'pending',
+            startDate: undefined,
+            endDate: undefined,
+            actualHours: 0,
+            subActivities: dataToSave.subActivities ? dataToSave.subActivities.map((s: any) => ({ ...s, id: uuidv4(), completed: false })) : []
+          });
+          
+          currentDate = nextDate;
+        }
+        
+        addActivities(activitiesToCreate);
+      } else {
+        addActivity(dataToSave);
+      }
     }
     setIsModalOpen(false);
   };

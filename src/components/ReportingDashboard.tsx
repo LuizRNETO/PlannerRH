@@ -75,12 +75,15 @@ export function ReportingDashboard({ activities }: ReportingDashboardProps) {
     const data: Record<string, { name: string; hours: number; count: number }> = {};
 
     activities.forEach(activity => {
-      const assignee = activity.assignee || 'Unassigned';
-      if (!data[assignee]) {
-        data[assignee] = { name: assignee, hours: 0, count: 0 };
-      }
-      data[assignee].hours += activity.estimatedHours || 0;
-      data[assignee].count += 1;
+      const activityAssignees = activity.assignees && activity.assignees.length > 0 ? activity.assignees : (activity.assignee ? [activity.assignee] : ['Unassigned']);
+      
+      activityAssignees.forEach(assignee => {
+        if (!data[assignee]) {
+          data[assignee] = { name: assignee, hours: 0, count: 0 };
+        }
+        data[assignee].hours += (activity.estimatedHours || 0) / activityAssignees.length;
+        data[assignee].count += 1;
+      });
     });
 
     return Object.values(data).sort((a, b) => b.hours - a.hours);

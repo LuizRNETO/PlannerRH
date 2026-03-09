@@ -1,7 +1,7 @@
 import { Activity } from '../types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit2, MoreHorizontal, Clock, CheckCircle, AlertCircle, Play } from 'lucide-react';
+import { Edit2, MoreHorizontal, Clock, CheckCircle, AlertCircle, Play, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import React, { useState } from 'react';
@@ -85,10 +85,18 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ activity, onClick, onMark
       </div>
       <h4 className="font-medium text-gray-900 mb-1">{activity.title}</h4>
       <div className="flex items-center gap-2 text-xs text-gray-500 mt-3">
-        <Clock className="w-3 h-3" />
-        <span>
-          {format(parseISO(activity.plannedDate), "d 'de' MMMM", { locale: ptBR })}
-        </span>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span>
+            {format(parseISO(activity.plannedDate), "d 'de' MMMM", { locale: ptBR })}
+          </span>
+        </div>
+        {activity.comments && activity.comments.length > 0 && (
+          <div className="flex items-center gap-1 ml-2 text-gray-400" title={`${activity.comments.length} comentário(s)`}>
+            <MessageSquare className="w-3 h-3" />
+            <span>{activity.comments.length}</span>
+          </div>
+        )}
         {activity.realizedDate && parseISO(activity.realizedDate) > parseISO(activity.plannedDate) && (
           <AlertCircle className="w-3 h-3 text-red-500 ml-auto" title="Atrasado" />
         )}

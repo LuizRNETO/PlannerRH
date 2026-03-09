@@ -24,7 +24,8 @@ import {
   Users,
   GraduationCap,
   PartyPopper,
-  Play
+  Play,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -159,7 +160,15 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized, onSta
                         )}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{activity.title}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                      {activity.title}
+                      {activity.comments && activity.comments.length > 0 && (
+                        <div className="flex items-center gap-1 text-gray-400" title={`${activity.comments.length} comentário(s)`}>
+                          <MessageSquare className="w-3 h-3" />
+                          <span className="text-[10px]">{activity.comments.length}</span>
+                        </div>
+                      )}
+                    </h3>
                     {activity.description && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{activity.description}</p>
                     )}
@@ -232,7 +241,15 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized, onSta
                         {format(parseISO(activity.plannedDate), "d 'de' MMM", { locale: ptBR })}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{activity.title}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                      {activity.title}
+                      {activity.comments && activity.comments.length > 0 && (
+                        <div className="flex items-center gap-1 text-gray-400" title={`${activity.comments.length} comentário(s)`}>
+                          <MessageSquare className="w-3 h-3" />
+                          <span className="text-[10px]">{activity.comments.length}</span>
+                        </div>
+                      )}
+                    </h3>
                     {activity.description && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{activity.description}</p>
                     )}
@@ -428,15 +445,21 @@ export function TimelineView({ activities, onEditActivity, onMarkRealized, onSta
                           )}
                         </div>
                         
-                        <h3 className={cn("font-bold text-lg mb-2 leading-tight", activity.status === 'completed' ? "text-gray-500 dark:text-gray-500 line-through" : "text-gray-900 dark:text-white")}>
+                        <h3 className={cn("font-bold text-lg mb-2 leading-tight flex items-center gap-2", activity.status === 'completed' ? "text-gray-500 dark:text-gray-500 line-through" : "text-gray-900 dark:text-white")}>
                           {activity.title}
+                          {activity.comments && activity.comments.length > 0 && (
+                            <div className="flex items-center gap-1 text-gray-400" title={`${activity.comments.length} comentário(s)`}>
+                              <MessageSquare className="w-4 h-4" />
+                              <span className="text-xs">{activity.comments.length}</span>
+                            </div>
+                          )}
                         </h3>
                         
                         {activity.description && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">{activity.description}</p>
                         )}
 
-                        {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+                        {activity.subActivities && activity.subActivities.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700">
                             <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                               <span>Progresso</span>

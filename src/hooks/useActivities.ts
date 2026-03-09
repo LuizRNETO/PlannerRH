@@ -97,6 +97,18 @@ export function useActivities() {
     setActivities((prev) => [...prev, newActivity]);
   };
 
+  const addActivities = (newActivities: Omit<Activity, 'id' | 'createdAt'>[]) => {
+    const activitiesToAdd: Activity[] = newActivities.map(activity => ({
+      status: 'pending',
+      realizedDate: null,
+      priority: 'medium',
+      ...activity,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    }));
+    setActivities((prev) => [...prev, ...activitiesToAdd]);
+  };
+
   const updateActivity = (id: string, updates: Partial<Activity>) => {
     setActivities((prev) =>
       prev.map((activity) => (activity.id === id ? { ...activity, ...updates } : activity))
@@ -114,6 +126,7 @@ export function useActivities() {
   return {
     activities,
     addActivity,
+    addActivities,
     updateActivity,
     deleteActivity,
     markAsRealized,

@@ -15,7 +15,7 @@ import {
   isValid,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, CheckCircle, Clock, AlertCircle, Check, Sidebar, X, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CheckCircle, Clock, AlertCircle, Check, Sidebar, X, Repeat, MessageSquare } from 'lucide-react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Activity } from '../types';
 import { cn } from '../lib/utils';
@@ -67,6 +67,12 @@ const DraggableActivity: React.FC<DraggableActivityProps> = ({ activity, onClick
             <Repeat className="w-3 h-3 text-gray-500 shrink-0" />
           )}
           <span className="font-medium truncate">{activity.title}</span>
+          {activity.comments && activity.comments.length > 0 && (
+            <div className="flex items-center gap-0.5 text-gray-400 shrink-0" title={`${activity.comments.length} comentário(s)`}>
+              <MessageSquare className="w-2.5 h-2.5" />
+              <span className="text-[9px]">{activity.comments.length}</span>
+            </div>
+          )}
         </div>
         {activity.status === 'completed' ? (
           <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -85,7 +91,7 @@ const DraggableActivity: React.FC<DraggableActivityProps> = ({ activity, onClick
         )}
       </div>
       
-      {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+      {activity.subActivities && activity.subActivities.length > 0 && (
         <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden mt-0.5">
           <div 
             className="h-full bg-blue-500 rounded-full transition-all duration-300"
@@ -482,7 +488,7 @@ export function Calendar({ activities, onAddActivity, onEditActivity, onMarkReal
                       <p className="text-xs opacity-70 line-clamp-2 mb-2">{activity.description}</p>
                     )}
 
-                    {activity.type === 'project' && activity.subActivities && activity.subActivities.length > 0 && (
+                    {activity.subActivities && activity.subActivities.length > 0 && (
                       <div className="mt-2">
                         <div className="flex justify-between text-[10px] mb-1 opacity-80">
                           <span>Progresso</span>

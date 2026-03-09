@@ -9,6 +9,12 @@ export interface SubActivity {
   completed: boolean;
 }
 
+export interface Comment {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Activity {
   id: string;
   title: string;
@@ -20,13 +26,16 @@ export interface Activity {
   priority: Priority;
   plannedDate: string; // ISO date string
   startDate?: string | null; // ISO date string
+  endDate?: string | null; // ISO date string
   realizedDate?: string | null; // ISO date string
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: string;
   subActivities?: SubActivity[];
+  comments?: Comment[];
   estimatedHours?: number;
   actualHours?: number;
   assignee?: string;
+  assignees?: string[];
 }
 
 export interface CalendarDay {

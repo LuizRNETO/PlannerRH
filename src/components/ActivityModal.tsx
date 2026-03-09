@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Activity, ActivityType, Frequency, Priority, SubActivity, IntervalUnit } from '../types';
+import { Activity, ActivityType, Frequency, Priority, SubActivity, IntervalUnit, Comment } from '../types';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { ASSIGNEES } from '../constants';
@@ -32,14 +32,21 @@ export function ActivityModal({
     priority: 'medium' as Priority,
     plannedDate: '',
     startDate: '',
+    endDate: '',
     description: '',
     estimatedHours: 0,
     actualHours: 0,
-    assignee: '',
+    assignees: [] as string[],
     status: 'pending' as Activity['status'],
   });
   const [subActivities, setSubActivities] = useState<SubActivity[]>([]);
   const [newSubActivity, setNewSubActivity] = useState('');
+
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+
+  const [generateMultiple, setGenerateMultiple] = useState(false);
+  const [occurrences, setOccurrences] = useState(2);
 
   useEffect(() => {
     if (activity) {
@@ -52,13 +59,17 @@ export function ActivityModal({
         priority: activity.priority || 'medium',
         plannedDate: activity.plannedDate,
         startDate: activity.startDate || '',
+        endDate: activity.endDate || '',
         description: activity.description || '',
         estimatedHours: activity.estimatedHours || 0,
         actualHours: activity.actualHours || 0,
-        assignee: activity.assignee || '',
+        assignees: activity.assignees && activity.assignees.length > 0 ? activity.assignees : (activity.assignee ? [activity.assignee] : []),
         status: activity.status,
       });
       setSubActivities(activity.subActivities || []);
+      setComments(activity.comments || []);
+      setGenerateMultiple(false);
+      setOccurrences(2);
     } else if (initialDate) {
       setFormData({
         title: '',
@@ -68,13 +79,18 @@ export function ActivityModal({
         intervalUnit: 'days',
         priority: 'medium',
         plannedDate: format(initialDate, 'yyyy-MM-dd'),
+        startDate: '',
+        endDate: '',
         description: '',
         estimatedHours: 0,
         actualHours: 0,
-        assignee: '',
+        assignees: [],
         status: 'pending',
       });
       setSubActivities([]);
+      setComments([]);
+      setGenerateMultiple(false);
+      setOccurrences(2);
     }
   }, [activity, initialDate, isOpen]);
 
@@ -86,6 +102,9 @@ export function ActivityModal({
       ...formData,
       id: activity?.id,
       subActivities,
+      comments,
+      generateMultiple,
+      occurrences,
     });
     onClose();
   };
@@ -107,6 +126,19 @@ export function ActivityModal({
     setSubActivities(subActivities.map(sub => 
       sub.id === id ? { ...sub, completed: !sub.completed } : sub
     ));
+  };
+
+  const addComment = () => {
+    if (!newComment.trim()) return;
+    setComments([
+      ...comments,
+      { id: uuidv4(), text: newComment, createdAt: new Date().toISOString() }
+    ]);
+    setNewComment('');
+  };
+
+  const removeComment = (id: string) => {
+    setComments(comments.filter(c => c.id !== id));
   };
 
   return (
@@ -207,6 +239,37 @@ export function ActivityModal({
             </div>
           )}
 
+          {!activity && formData.frequency !== 'once' && (
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800">
+              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={generateMultiple}
+                  onChange={(e) => setGenerateMultiple(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-indigo-900 dark:text-indigo-300">
+                  Gerar lançamentos futuros automaticamente
+                </span>
+              </label>
+              
+              {generateMultiple && (
+                <div className="pl-6 flex items-center gap-2">
+                  <span className="text-xs text-indigo-700 dark:text-indigo-400">Criar para as próximas</span>
+                  <input
+                    type="number"
+                    min="2"
+                    max="60"
+                    value={occurrences}
+                    onChange={(e) => setOccurrences(parseInt(e.target.value) || 2)}
+                    className="w-16 px-2 py-1 text-sm border border-indigo-200 dark:border-indigo-700 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                  <span className="text-xs text-indigo-700 dark:text-indigo-400">ocorrências</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
@@ -238,7 +301,9 @@ export function ActivityModal({
                 <option value="cancelled">Cancelado</option>
               </select>
             </div>
+          </div>
 
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                 Data Planejada
@@ -260,6 +325,18 @@ export function ActivityModal({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+                Data de Fim
+              </label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -294,20 +371,29 @@ export function ActivityModal({
                 placeholder="0"
               />
             </div>
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
-                Responsável
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Responsáveis
               </label>
-              <select
-                value={formData.assignee || ''}
-                onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value="">Selecione...</option>
+              <div className="flex flex-wrap gap-2">
                 {ASSIGNEES.map(assignee => (
-                  <option key={assignee} value={assignee}>{assignee}</option>
+                  <label key={assignee} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.assignees.includes(assignee)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({ ...formData, assignees: [...formData.assignees, assignee] });
+                        } else {
+                          setFormData({ ...formData, assignees: formData.assignees.filter(a => a !== assignee) });
+                        }
+                      }}
+                      className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-200">{assignee}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
           </div>
 
@@ -323,84 +409,136 @@ export function ActivityModal({
             />
           </div>
 
-          {formData.type === 'project' && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                  Sub-atividades
-                </label>
-                {subActivities.length > 0 && (
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {subActivities.filter(s => s.completed).length}/{subActivities.length} concluídas
-                  </span>
-                )}
-              </div>
-
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                Sub-atividades
+              </label>
               {subActivities.length > 0 && (
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
-                  <div 
-                    className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${(subActivities.filter(s => s.completed).length / subActivities.length) * 100}%` 
-                    }}
-                  />
-                </div>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                  {subActivities.filter(s => s.completed).length}/{subActivities.length} concluídas
+                </span>
               )}
-              
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newSubActivity}
-                  onChange={(e) => setNewSubActivity(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubActivity())}
-                  className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Nova sub-atividade..."
-                />
-                <button
-                  type="button"
-                  onClick={addSubActivity}
-                  className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+            </div>
 
-              <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                {subActivities.map((sub) => (
-                  <div 
-                    key={sub.id} 
-                    className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-lg group cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    onClick={() => toggleSubActivity(sub.id)}
+            {subActivities.length > 0 && (
+              <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
+                <div 
+                  className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${(subActivities.filter(s => s.completed).length / subActivities.length) * 100}%` 
+                  }}
+                />
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSubActivity}
+                onChange={(e) => setNewSubActivity(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubActivity())}
+                className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Nova sub-atividade..."
+              />
+              <button
+                type="button"
+                onClick={addSubActivity}
+                className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+              {subActivities.map((sub) => (
+                <div 
+                  key={sub.id} 
+                  className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-lg group cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => toggleSubActivity(sub.id)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={sub.completed}
+                    onChange={() => {}} // Handled by parent div
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 pointer-events-none w-3.5 h-3.5"
+                  />
+                  <span className={`flex-1 text-xs ${sub.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
+                    {sub.title}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeSubActivity(sub.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-600 transition-all"
                   >
-                    <input
-                      type="checkbox"
-                      checked={sub.completed}
-                      onChange={() => {}} // Handled by parent div
-                      className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 pointer-events-none w-3.5 h-3.5"
-                    />
-                    <span className={`flex-1 text-xs ${sub.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
-                      {sub.title}
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {subActivities.length === 0 && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 italic text-center py-1">
+                  Nenhuma sub-atividade adicionada
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+              Comentários
+            </label>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addComment())}
+                className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Adicionar comentário..."
+              />
+              <button
+                type="button"
+                onClick={addComment}
+                className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+              {comments.map((comment) => (
+                <div 
+                  key={comment.id} 
+                  className="flex flex-col bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg group transition-colors"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap flex-1">
+                      {comment.text}
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeSubActivity(sub.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-600 transition-all"
+                      onClick={() => removeComment(comment.id)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-red-400 hover:text-red-600 transition-all shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                ))}
-                {subActivities.length === 0 && (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic text-center py-1">
-                    Nenhuma sub-atividade adicionada
-                  </p>
-                )}
-              </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                    {format(new Date(comment.createdAt), "dd/MM/yyyy 'às' HH:mm")}
+                  </span>
+                </div>
+              ))}
+              {comments.length === 0 && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 italic text-center py-1">
+                  Nenhum comentário
+                </p>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
             {activity && onDelete && (

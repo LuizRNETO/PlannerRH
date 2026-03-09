@@ -3,7 +3,7 @@ import { Activity } from '../types';
 import { format, addDays, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '../lib/utils';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
 
 interface GanttViewProps {
   activities: Activity[];
@@ -29,11 +29,19 @@ export function GanttView({ activities, onEditActivity }: GanttViewProps) {
   };
 
   const getDuration = (activity: Activity) => {
+    // If explicit start and end dates are provided, use them
+    if (activity.startDate && activity.endDate) {
+      const start = parseISO(activity.startDate);
+      const end = parseISO(activity.endDate);
+      const diff = differenceInDays(end, start);
+      return Math.max(diff + 1, 1);
+    }
+
     // Estimate duration: 
     // If completed, diff between realized and planned.
     // If pending, default to 5 days or interval if set.
     if (activity.status === 'completed' && activity.realizedDate) {
-      const start = parseISO(activity.plannedDate);
+      const start = parseISO(activity.startDate || activity.plannedDate);
       const end = parseISO(activity.realizedDate);
       const diff = differenceInDays(end, start);
       return Math.max(diff + 1, 1);
@@ -47,7 +55,7 @@ export function GanttView({ activities, onEditActivity }: GanttViewProps) {
   };
 
   const getBarPosition = (activity: Activity) => {
-    const activityDate = parseISO(activity.plannedDate);
+    const activityDate = parseISO(activity.startDate || activity.plannedDate);
     if (!isValid(activityDate)) return null;
 
     const diffDays = differenceInDays(activityDate, startDate);
@@ -103,7 +111,15 @@ export function GanttView({ activities, onEditActivity }: GanttViewProps) {
               className="h-16 border-b border-gray-100 px-4 flex flex-col justify-center hover:bg-gray-50 cursor-pointer transition-colors"
               onClick={() => onEditActivity(project)}
             >
-              <div className="font-medium text-sm text-gray-900 truncate">{project.title}</div>
+              <div className="font-medium text-sm text-gray-900 truncate flex items-center gap-2">
+                {project.title}
+                {project.comments && project.comments.length > 0 && (
+                  <div className="flex items-center gap-1 text-gray-400" title={`${project.comments.length} comentário(s)`}>
+                    <MessageSquare className="w-3 h-3" />
+                    <span className="text-[10px]">{project.comments.length}</span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div 
